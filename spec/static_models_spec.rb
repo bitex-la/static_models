@@ -114,4 +114,29 @@ describe StaticModels::BelongsTo do
       Dog.new.breed = 3333
     end.to raise_exception(StaticModels::TypeError)
   end
+
+  it "can be used on AR polymorphic associations" do
+    setup_database!
+    run_migration do
+      create_table(:stored_dogs, force: true) do |t|
+        t.string :name
+        t.integer :classification_id
+        t.string :classification_type
+      end
+    end
+
+    spawn_model 'StoredDog' do
+      belongs_to :classification, polymorphic: true
+    end
+
+    StoredDog.new.tap do |d|
+      d.classification = Breed.corgi
+      d.save!
+      d.reload.classification.should == Breed.corgi
+      d.classification_type.should == 'Breed'
+      d.classification_id.should == 7
+    end
+
+    cleanup_database!
+  end
 end

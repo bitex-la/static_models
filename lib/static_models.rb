@@ -2,6 +2,17 @@ require "static_models/version"
 require "active_support"
 require "active_support/inflector"
 
+# @private
+class Association
+	def initialize(*args)
+		{}
+	end
+
+	def merge!(*args)
+		{}
+	end
+end
+
 module StaticModels
   module Model
     extend ActiveSupport::Concern
@@ -27,6 +38,24 @@ module StaticModels
 
       def name
         code
+      end
+
+      # For ActiveRecord polymorphic association compatibility.
+      alias_method :_read_attribute, :send
+      def destroyed?
+        false
+      end
+
+      def marked_for_destruction?
+        false
+      end
+
+      def new_record?
+        !persisted?
+      end
+
+      def persisted?
+        true
       end
     end
 
@@ -65,6 +94,64 @@ module StaticModels
       def all
         values.values
       end
+
+      # For ActiveRecord polymorphic association compatibility.
+      def base_class
+        self
+      end
+      def primary_key
+        :id
+      end
+
+      def arel_table
+        self.name.tableize
+      end
+
+			def relation_delegate_class(args)
+				Association
+			end
+		
+			def unscoped
+				self
+			end
+			
+			def extending!(*args)
+				self
+			end
+
+			def table_name
+				self.name.tableize
+			end
+			
+			def bind_values
+				[]			
+			end
+			
+			def bind_values=(a)
+				{}
+			end
+			
+			def where(*args)
+				self
+			end
+
+			def connection
+				Class.new do
+					def unscoped
+						self
+					end
+					def self.substitute_at(*args)
+						{}
+					end
+					def self.schema_cache
+						Class.new do
+							def self.columns_hash(*args)
+								{}
+							end
+						end
+					end
+				end
+			end
     end
   end
 
