@@ -20,6 +20,14 @@ module StaticModels
       def to_s
         code.to_s
       end
+
+      def to_i
+        id
+      end
+
+      def name
+        code
+      end
     end
 
     class_methods do

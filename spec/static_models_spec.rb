@@ -45,8 +45,18 @@ describe StaticModels::Model do
       6 => Breed.corgi,
       7 => Breed.doberman
     }
+  end
 
+  it "#to_s" do
     Breed.collie.to_s.should == 'collie'
+  end
+
+  it "#to_i" do
+    Breed.collie.to_i.should == 1
+  end
+
+  it '#name' do
+    Breed.collie.name.should == :collie
   end
 
   def self.it_raises_checking(title, exception, attributes)
