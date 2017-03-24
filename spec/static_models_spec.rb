@@ -11,10 +11,11 @@ class Breed
 end
 
 class Dog
-  attr_accessor :breed_id
+  attr_accessor :breed_id, :anything_id, :anything_type
 
   include StaticModels::BelongsTo
   belongs_to :breed
+  belongs_to :anything, polymorphic: true
 end
 
 describe StaticModels::Model do
@@ -95,6 +96,19 @@ describe StaticModels::BelongsTo do
     end
   end
 
+  it "can be used as a polymorphic association" do
+    Dog.new.tap do |d|
+      d.anything_id.should be_nil
+      d.anything_type.should be_nil
+      d.anything = Breed.corgi
+      d.anything_id.should == 6
+      d.anything_type.should == 'Breed'
+
+      d.anything_id = 7
+      d.anything.should == Breed.doberman
+    end
+  end
+
   it "can receive a specific class for association" do
     class WeirdDoggie
       attr_accessor :dog_kind_id
@@ -115,21 +129,20 @@ describe StaticModels::BelongsTo do
     end.to raise_exception(StaticModels::TypeError)
   end
 
-  it "can be used on belongs to" do
-    setup_database!
-    run_migration do
-      create_table(:store_dogs, force: true) do |t|
-        t.integer :breed_id
-        t.integer :classification_id
-        t.integer :anything_id
-        t.string :anything_type
-        t.integer :store_dog_id
-        t.integer :another_dog_id
-        t.integer :anydog_id
-        t.string :anydog_type
-      end
-    end
+  it 'allows assigning nil' do
+    dog = Dog.new
+    dog.breed = Breed.corgi
+    dog.breed = nil
+    dog.breed_id.should be_nil
+    dog.breed.should be_nil
+    dog.anything = Breed.doberman
+    dog.anything = nil
+    dog.anything_id.should be_nil
+    dog.anything_type.should be_nil
+    dog.anything.should be_nil
+  end
 
+  describe 'when used on an ActiveRecord model' do
     class StoreDog < ActiveRecord::Base
       include StaticModels::BelongsTo
       belongs_to :breed
@@ -140,29 +153,74 @@ describe StaticModels::BelongsTo do
       belongs_to :anydog, polymorphic: true
     end
 
-    dog = StoreDog.new
-    dog.breed = Breed.corgi
-    dog.classification = Breed.collie
-    dog.anything = Breed.doberman
-    dog.store_dog = dog
-    dog.another_dog = dog
-    dog.anydog = dog
-    dog.save!
-    dog.reload
-    dog.breed.should == Breed.corgi
-    dog.classification.should == Breed.collie
-    dog.anything.should == Breed.doberman
-    dog.store_dog.should == dog
-    dog.another_dog.should == dog
-    dog.anydog.should == dog
+    before(:each) do
+      setup_database!
+      run_migration do
+        create_table(:store_dogs, force: true) do |t|
+          t.integer :breed_id
+          t.integer :classification_id
+          t.integer :anything_id
+          t.string :anything_type
+          t.integer :store_dog_id
+          t.integer :another_dog_id
+          t.integer :anydog_id
+          t.string :anydog_type
+        end
+      end
+    end
+    after(:each) { cleanup_database! }
 
-    dog.anything = dog
-    dog.anydog = Breed.foxhound
-    dog.save!
-    dog.reload
-    dog.anything.should == dog
-    dog.anydog.should == Breed.foxhound
+    it "can be used on belongs to" do
+      dog = StoreDog.new
+      dog.breed = Breed.corgi
+      dog.classification = Breed.collie
+      dog.anything = Breed.doberman
+      dog.store_dog = dog
+      dog.another_dog = dog
+      dog.anydog = dog
+      dog.save!
+      dog.reload
+      dog.breed.should == Breed.corgi
+      dog.classification.should == Breed.collie
+      dog.anything.should == Breed.doberman
+      dog.store_dog.should == dog
+      dog.another_dog.should == dog
+      dog.anydog.should == dog
 
-    cleanup_database!
+      dog.anything = dog
+      dog.anydog = Breed.foxhound
+      dog.save!
+      dog.reload
+      dog.anything.should == dog
+      dog.anydog.should == Breed.foxhound
+    end
+
+    it 'allows assigning nil' do
+      dog = StoreDog.new
+      dog.breed = Breed.corgi
+      dog.classification = Breed.collie
+      dog.anything = Breed.doberman
+      dog.store_dog = dog
+      dog.another_dog = dog
+      dog.anydog = dog
+      dog.save!
+      dog.reload
+
+      dog.breed = nil
+      dog.classification = nil
+      dog.anything = nil
+      dog.store_dog = nil
+      dog.another_dog = nil
+      dog.anydog = nil
+      dog.save!
+      dog.reload
+
+      dog.breed.should be_nil
+      dog.classification.should be_nil
+      dog.anything.should be_nil
+      dog.store_dog.should be_nil
+      dog.another_dog.should be_nil
+      dog.anydog.should be_nil
+    end
   end
 end

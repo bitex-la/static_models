@@ -76,19 +76,17 @@ module StaticModels
             (opts[:class_name] || association.to_s.camelize)
           end
 
-          return nil unless Object.const_defined?(klass_name)
-          
-          klass = klass_name.constantize
+          klass = klass_name && klass_name.safe_constantize
 
-          if klass.include?(Model)
+          if klass && klass.include?(Model)
             klass.find(send("#{association}_id"))
-          else
+          elsif defined?(super)
             super()
           end
         end
 
         define_method("#{association}=") do |value|
-          unless opts[:polymorphic]
+          unless opts[:polymorphic] || value.nil?
             expected = [opts[:class_name], association.to_s.camelize].compact
             got = value.class.name
             unless expected.include?(got)
@@ -96,14 +94,14 @@ module StaticModels
             end
           end
 
-          if value.class.include?(Model)
+          if value.nil? || value.class.include?(Model)
             if opts[:polymorphic]
               # This next line resets the old polymorphic association
               # if it was set to an ActiveRecord::Model. Otherwise
               # ActiveRecord will get confused and ask for our StaticModel's
               # table and a bunch of other things that don't apply.
               super(nil) if defined?(super)
-              send("#{association}_type=", value.class.name )
+              send("#{association}_type=", value && value.class.name )
             end
             send("#{association}_id=", value && value.id)
           else
