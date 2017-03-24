@@ -1,6 +1,8 @@
 # StaticModels
 
-DRY your accesory "key - value" classes. Use them as associations on a parent model.
+DRY your auxiliary singleton enumerations.
+You know, those "key - value" classes.
+Use them as associations on a parent model.
 
 ## Installation
 
@@ -21,7 +23,7 @@ Or install it yourself as:
 ## Usage
 
 ```ruby
-    # We're modelling Dog's, each of them has a Breed.
+    # We're modelling Dogs, each of them has a Breed.
     # We support a static set of Breeds.
 
     class Breed
@@ -31,7 +33,7 @@ Or install it yourself as:
       # Actually define the breeds we support using a Hash
       # Keys are the 'id' attribute of each model. Must be Integers.
       # Values are the 'code' attribute. Must be Symbols, and unique.
-      # If you want your model to have extra attributes, make te value
+      # If you want your model to have extra attributes, make the value
       # be an Array of 2 elements: [Symbol, Hash].
       static_models(
         1 => :collie,
@@ -51,9 +53,9 @@ Or install it yourself as:
     end
 
     # Definitions can be sparse, no need to set a value for all attributes.
-    Breed.collie.height.should be_nil
+    Breed.collie.height == nil
 
-    # All just returns the ordered collection.
+    # 'All' just returns the ordered collection.
     Breed.all.should == [
       Breed.collie,
       Breed.foxhound,
@@ -69,7 +71,7 @@ Or install it yourself as:
       7 => Breed.doberman
     }
 
-    # You can use your StaticModels similar to an association.
+    # You point to your StaticModels like an ActiveRecords belongs_to association
     # Setting a Breed will update a breed_id attribute.
     class Dog
       attr_accessor :breed_id

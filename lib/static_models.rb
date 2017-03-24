@@ -1,7 +1,6 @@
 require "static_models/version"
 require "active_support"
 require "active_support/inflector"
-require 'byebug'
 
 module StaticModels
   module Model
