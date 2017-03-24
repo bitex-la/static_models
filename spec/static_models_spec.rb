@@ -123,6 +123,32 @@ describe StaticModels::BelongsTo do
     end
   end
 
+  it "finds local and global models when guessing association class" do
+    module DogHouse
+      class LocalBreed
+        include StaticModels::Model
+        static_models(
+          1 => :local_collie,
+          2 => :local_foxhound,
+        )
+      end
+
+      class LocalDoggie
+        attr_accessor :breed_id
+        attr_accessor :local_breed_id
+
+        include StaticModels::BelongsTo
+        belongs_to :breed
+        belongs_to :local_breed
+      end
+
+      LocalDoggie.new.tap do |d|
+        d.breed = Breed.collie
+        d.local_breed = LocalBreed.local_collie
+      end
+    end
+  end
+
   it "raises when types don't match" do
     expect do
       Dog.new.breed = 3333

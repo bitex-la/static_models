@@ -69,14 +69,16 @@ module StaticModels
       def belongs_to(association, opts = {})
         super(association, opts) if defined?(super)
 
-        define_method("#{association}") do
-          klass_name = if opts[:polymorphic]
-            send("#{association}_type")
-          else
-            (opts[:class_name] || association.to_s.camelize)
-          end
+        expected_class = unless opts[:polymorphic]
+          module_name = self.class.to_s.split("::")[0..-2].join("::")
+          [ opts[:class_name],
+            "#{module_name}::#{association.to_s.camelize}",
+            association.to_s.camelize,
+          ].compact.collect(&:safe_constantize).compact.first
+        end
 
-          klass = klass_name && klass_name.safe_constantize
+        define_method("#{association}") do
+          klass = expected_class || send("#{association}_type").to_s.safe_constantize
 
           if klass && klass.include?(Model)
             klass.find(send("#{association}_id"))
@@ -86,12 +88,8 @@ module StaticModels
         end
 
         define_method("#{association}=") do |value|
-          unless opts[:polymorphic] || value.nil?
-            expected = [opts[:class_name], association.to_s.camelize].compact
-            got = value.class.name
-            unless expected.include?(got)
-              raise TypeError.new("Expected #{expected.first} got #{got}")
-            end
+          if expected_class && !value.nil? && value.class != expected_class
+            raise TypeError.new("Expected #{expected_class} got #{value.class}")
           end
 
           if value.nil? || value.class.include?(Model)
