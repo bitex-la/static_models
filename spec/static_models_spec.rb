@@ -14,7 +14,7 @@ class Dog
   attr_accessor :breed_id
 
   include StaticModels::BelongsTo
-  belongs_to_static_model :breed
+  belongs_to :breed
 end
 
 describe StaticModels::Model do
@@ -100,7 +100,7 @@ describe StaticModels::BelongsTo do
       attr_accessor :dog_kind_id
 
       include StaticModels::BelongsTo
-      belongs_to_static_model :dog_kind, Breed
+      belongs_to :dog_kind, class_name: 'Breed'
 
       WeirdDoggie.new.tap do |d|
         d.dog_kind = Breed.corgi
@@ -115,27 +115,53 @@ describe StaticModels::BelongsTo do
     end.to raise_exception(StaticModels::TypeError)
   end
 
-  it "can be used on AR polymorphic associations" do
+  it "can be used on belongs to" do
     setup_database!
     run_migration do
-      create_table(:stored_dogs, force: true) do |t|
-        t.string :name
+      create_table(:store_dogs, force: true) do |t|
+        t.integer :breed_id
         t.integer :classification_id
-        t.string :classification_type
+        t.integer :anything_id
+        t.string :anything_type
+        t.integer :store_dog_id
+        t.integer :another_dog_id
+        t.integer :anydog_id
+        t.string :anydog_type
       end
     end
 
-    spawn_model 'StoredDog' do
-      belongs_to :classification, polymorphic: true
+    class StoreDog < ActiveRecord::Base
+      include StaticModels::BelongsTo
+      belongs_to :breed
+      belongs_to :classification, class_name: 'Breed'
+      belongs_to :anything, polymorphic: true
+      belongs_to :store_dog
+      belongs_to :another_dog, class_name: 'StoreDog'
+      belongs_to :anydog, polymorphic: true
     end
 
-    StoredDog.new.tap do |d|
-      d.classification = Breed.corgi
-      d.save!
-      d.reload.classification.should == Breed.corgi
-      d.classification_type.should == 'Breed'
-      d.classification_id.should == 7
-    end
+    dog = StoreDog.new
+    dog.breed = Breed.corgi
+    dog.classification = Breed.collie
+    dog.anything = Breed.doberman
+    dog.store_dog = dog
+    dog.another_dog = dog
+    dog.anydog = dog
+    dog.save!
+    dog.reload
+    dog.breed.should == Breed.corgi
+    dog.classification.should == Breed.collie
+    dog.anything.should == Breed.doberman
+    dog.store_dog.should == dog
+    dog.another_dog.should == dog
+    dog.anydog.should == dog
+
+    dog.anything = dog
+    dog.anydog = Breed.foxhound
+    dog.save!
+    dog.reload
+    dog.anything.should == dog
+    dog.anydog.should == Breed.foxhound
 
     cleanup_database!
   end

@@ -1,17 +1,7 @@
 require "static_models/version"
 require "active_support"
 require "active_support/inflector"
-
-# @private
-class Association
-	def initialize(*args)
-		{}
-	end
-
-	def merge!(*args)
-		{}
-	end
-end
+require 'byebug'
 
 module StaticModels
   module Model
@@ -28,35 +18,9 @@ module StaticModels
         end
       end
 
-      def to_s
-        code.to_s
-      end
-
-      def to_i
-        id
-      end
-
-      def name
-        code
-      end
-
-      # For ActiveRecord polymorphic association compatibility.
-      alias_method :_read_attribute, :send
-      def destroyed?
-        false
-      end
-
-      def marked_for_destruction?
-        false
-      end
-
-      def new_record?
-        !persisted?
-      end
-
-      def persisted?
-        true
-      end
+      def to_s; code.to_s; end
+      def to_i; id; end
+      def name; code; end
     end
 
     class_methods do
@@ -94,64 +58,6 @@ module StaticModels
       def all
         values.values
       end
-
-      # For ActiveRecord polymorphic association compatibility.
-      def base_class
-        self
-      end
-      def primary_key
-        :id
-      end
-
-      def arel_table
-        self.name.tableize
-      end
-
-			def relation_delegate_class(args)
-				Association
-			end
-		
-			def unscoped
-				self
-			end
-			
-			def extending!(*args)
-				self
-			end
-
-			def table_name
-				self.name.tableize
-			end
-			
-			def bind_values
-				[]			
-			end
-			
-			def bind_values=(a)
-				{}
-			end
-			
-			def where(*args)
-				self
-			end
-
-			def connection
-				Class.new do
-					def unscoped
-						self
-					end
-					def self.substitute_at(*args)
-						{}
-					end
-					def self.schema_cache
-						Class.new do
-							def self.columns_hash(*args)
-								{}
-							end
-						end
-					end
-				end
-			end
     end
   end
 
@@ -161,18 +67,49 @@ module StaticModels
     extend ActiveSupport::Concern
 
     class_methods do
-      def belongs_to_static_model(attr_name, cls=nil)
-        cls ||= attr_name.to_s.humanize.constantize
+      def belongs_to(association, opts = {})
+        super(association, opts) if defined?(super)
 
-        define_method(attr_name) do
-          cls.find(send("#{attr_name}_id"))
+        define_method("#{association}") do
+          klass_name = if opts[:polymorphic]
+            send("#{association}_type")
+          else
+            (opts[:class_name] || association.to_s.camelize)
+          end
+
+          return nil unless Object.const_defined?(klass_name)
+          
+          klass = klass_name.constantize
+
+          if klass.include?(Model)
+            klass.find(send("#{association}_id"))
+          else
+            super()
+          end
         end
 
-        define_method("#{attr_name}=") do |value|
-          unless value.nil? || value.is_a?(cls)
-            raise TypeError.new("Expected #{cls} got #{value.class}")
+        define_method("#{association}=") do |value|
+          unless opts[:polymorphic]
+            expected = [opts[:class_name], association.to_s.camelize].compact
+            got = value.class.name
+            unless expected.include?(got)
+              raise TypeError.new("Expected #{expected.first} got #{got}")
+            end
           end
-          send("#{attr_name}_id=", value && value.id)
+
+          if value.class.include?(Model)
+            if opts[:polymorphic]
+              # This next line resets the old polymorphic association
+              # if it was set to an ActiveRecord::Model. Otherwise
+              # ActiveRecord will get confused and ask for our StaticModel's
+              # table and a bunch of other things that don't apply.
+              super(nil) if defined?(super)
+              send("#{association}_type=", value.class.name )
+            end
+            send("#{association}_id=", value && value.id)
+          else
+            super(value)
+          end
         end
       end
     end

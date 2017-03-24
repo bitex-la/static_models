@@ -75,7 +75,7 @@ Or install it yourself as:
       attr_accessor :breed_id
 
       include StaticModels::BelongsTo
-      belongs_to_static_model :breed
+      belongs_to :breed
     end
 
     Dog.new.tap do |d|
@@ -89,14 +89,38 @@ Or install it yourself as:
       d.breed.should == Breed.doberman
     end
 
-    # Set your model manually if it can't be inferred from the attribute name
+    # StaticModels::BelongsTo plays nice with ActiveRecords belongs_to.
+    # You can use it in your models transparently, it will know
+    # when to use a StaticModel or call out to ActiveRecord's code.
+    # You can even set up polymorphic associations that point to either
+    # a StaticModel or an ActiveRecord model.
 
-    class WeirdDoggie
-      attr_accessor :dog_kind_id
-
+    class StoreDog < ActiveRecord::Base
       include StaticModels::BelongsTo
-      belongs_to_static_model :dog_kind, Breed
+      belongs_to :breed
+      belongs_to :classification, class_name: 'Breed'
+      belongs_to :anything, polymorphic: true
+      belongs_to :store_dog
+      belongs_to :another_dog, class_name: 'StoreDog'
+      belongs_to :anydog, polymorphic: true
     end
+
+    dog = StoreDog.new
+    dog.breed = Breed.corgi
+    dog.classification = Breed.collie
+    dog.anything = Breed.doberman
+    dog.store_dog = dog
+    dog.another_dog = dog
+    dog.anydog = dog
+    dog.save!
+    dog.reload
+    dog.breed == Breed.corgi
+    dog.classification == Breed.collie
+    dog.anything == Breed.doberman
+    dog.store_dog == dog
+    dog.another_dog == dog
+    dog.anydog == dog
+
 ```
 
 ## Development
