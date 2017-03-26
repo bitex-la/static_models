@@ -2,12 +2,13 @@ require "spec_helper"
 
 class Breed
   include StaticModels::Model
-  static_models(
-    1 => :collie,
-    2 => :foxhound,
-    6 => [:corgi, height: 'short'],
-    7 => [:doberman, height: 'tall']
-  )
+  static_models_dense [
+    [:id, :code,      :height ],
+    [1,   :collie,    nil     ],
+    [2,   :foxhound,  nil     ],
+    [6,   :corgi,     'short' ],
+    [7,   :doberman,  'tall'  ],
+  ]
 end
 
 class Dog
@@ -19,6 +20,7 @@ class Dog
 end
 
 describe StaticModels::Model do
+
   it "defines and uses a static model" do
     Breed.corgi.tap do |b|
       b.should == Breed.find(6)
@@ -60,28 +62,56 @@ describe StaticModels::Model do
     Breed.collie.name.should == :collie
   end
 
-  def self.it_raises_checking(title, exception, attributes)
-    it "raises checking #{title}" do
-      expect do
-        Class.new do
-          include StaticModels::Model
-          static_models(attributes)
-        end
-      end.to raise_exception(exception)
+  it 'Defines static model values using a dense table' do
+    class SparseBreed
+      include StaticModels::Model
+      static_models_sparse [
+        [1, :collie],
+        [2, :foxhound],
+        [6, :corgi, height: 'short'],
+        [7, :doberman,  height: 'tall'],
+      ]
+    end
+
+    SparseBreed.values.zip(Breed.values).each do |sparse, dense|
+      sparse.first.should == dense.first
+      sparse.last.code.should == dense.last.code
+      sparse.last.height.should == dense.last.height
     end
   end
 
-  it_raises_checking "keys type",
-    StaticModels::TypeError, "hello" => :foo
+  describe 'when checking malformed definitions' do
+    def self.check_def(title, &blk)
+      it title do
+        expect do
+          Class.new do
+            include StaticModels::Model
+            instance_eval &blk
+          end
+        end.to raise_exception(StaticModels::ValueError)
+      end
+    end
 
-  it_raises_checking "codes type",
-    StaticModels::TypeError, 1 => 2323
+    def self.checks_dense(title, *table)
+      check_def("checks dense "+ title) do static_models_dense(table) end
+    end
 
-  it_raises_checking "extended attributes types",
-    StaticModels::TypeError, 1 => [:bar, :ble, foo: :bar]
+    def self.checks_sparse(title, *table)
+      check_def("checks sparse "+ title) do static_models_sparse(table) end
+    end
 
-  it_raises_checking "codes are unique",
-    StaticModels::DuplicateCodes, 1 => :foo, 2 => :foo 
+    checks_sparse "id is Fixnum", ["hello", :foo]
+    checks_sparse "code is Symbol", [1, 2323]
+    checks_sparse "has only id, code, and Hash", [1, :bar, :ble, foo: :bar]
+    checks_sparse "codes are unique", [1, :foo], [2, :foo]
+    checks_sparse "columns are symbols", [1, :foo, [] => :baz]
+
+    checks_dense "id is Fixnum", [:id, :code], ["hello", :foo]
+    checks_dense "invalid code type", [:id, :code], [1, 2323]
+    checks_dense "has id and code", [:id, :code, :other], [1,]
+    checks_dense "codes are unique", [:id, :code], [1, :foo], [2, :foo]
+    checks_dense "columns are symbols", [:id, :code, []], [1, :foo, :baz]
+  end
 end
 
 describe StaticModels::BelongsTo do
@@ -127,10 +157,10 @@ describe StaticModels::BelongsTo do
     module DogHouse
       class LocalBreed
         include StaticModels::Model
-        static_models(
-          1 => :local_collie,
-          2 => :local_foxhound,
-        )
+        static_models_sparse [
+          [1, :local_collie],
+          [2, :local_foxhound],
+        ]
       end
 
       class LocalDoggie
@@ -152,7 +182,7 @@ describe StaticModels::BelongsTo do
   it "raises when types don't match" do
     expect do
       Dog.new.breed = 3333
-    end.to raise_exception(StaticModels::TypeError)
+    end.to raise_exception(StaticModels::ValueError)
   end
 
   it 'allows assigning nil' do

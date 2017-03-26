@@ -22,6 +22,8 @@ Or install it yourself as:
 
 ## Usage
 
+### Defining your models
+
 ```ruby
     # We're modelling Dogs, each of them has a Breed.
     # We support a static set of Breeds.
@@ -30,17 +32,18 @@ Or install it yourself as:
       # Enhance Breed to be a StaticModel
       include StaticModels::Model 
 
-      # Actually define the breeds we support using a Hash
-      # Keys are the 'id' attribute of each model. Must be Integers.
-      # Values are the 'code' attribute. Must be Symbols, and unique.
-      # If you want your model to have extra attributes, make the value
-      # be an Array of 2 elements: [Symbol, Hash].
-      static_models(
-        1 => :collie,
-        2 => :foxhound,
-        6 => [:corgi, height: 'short'],
-        7 => [:doberman, height: 'tall']
-      )
+      # Our StaticModel instances can be defined as a table.
+      # The first two columns are special:
+      # 'id' must be a Fixnum, and will be used internally as primary key.
+      # 'code' must be a Symbol, and will be used as a friendlier ID.
+      # Class methods will be created to fetch a StaticModel instance by code.
+      static_models_dense [
+        [:id, :code,      :height ],
+        [1,   :collie,    nil     ],
+        [2,   :foxhound,  nil     ],
+        [6,   :corgi,     'short' ],
+        [7,   :doberman,  'tall'  ],
+      ]
     end
 
     # You can find your Breed.
@@ -63,13 +66,30 @@ Or install it yourself as:
       Breed.doberman
     ]
 
-    # The low level 'values' dictionary is public.
+    # A low level 'values' dictionary is public.
     Breed.values.should == {
       1 => Breed.collie,
       2 => Breed.foxhound,
       6 => Breed.corgi,
       7 => Breed.doberman
     }
+
+    # An alternative syntax is supported to use with sparse attribute definitions
+    # Here's a definition of Breed with sparse attributes.
+    class SparseBreed
+      include StaticModels::Model
+      static_models_sparse [
+        [1, :collie],
+        [2, :foxhound],
+        [6, :corgi, height: 'short'],
+        [7, :doberman,  height: 'tall'],
+      ]
+    end
+```
+
+### PORO's and ActiveRecords can belongs_to a StaticModel
+
+```ruby
 
     # You point to your StaticModels like an ActiveRecords belongs_to association
     # Setting a Breed will update a breed_id attribute.

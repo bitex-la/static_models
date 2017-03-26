@@ -7,45 +7,65 @@ module StaticModels
     extend ActiveSupport::Concern
 
     included do |i|
-      cattr_accessor :values
+      cattr_accessor :values, :id_column, :code_column
 
-      def initialize(id, code, *args)
-        self.id = id
-        self.code = code
-        unless args.empty?
-          args.first.each{|name,value| send("#{name}=", value) }
-        end
+      def initialize(attributes)
+        attributes.each{|name,value| send("#{name}=", value) }
       end
 
-      def to_s; code.to_s; end
-      def to_i; id; end
-      def name; code; end
+      def name; send(self.class.code_column); end
+      def to_s; name.to_s; end
+      def to_i; send(self.class.id_column); end
     end
 
     class_methods do
-      def static_models(new_values)
-        attr_accessor :id, :code
+      def static_models_dense(table)
+        columns = table.first
+        hashes = table[1..-1].collect do |row|
+          Hash[*columns.zip(row).flatten(1)]
+        end
+
+        static_models_hashes columns, hashes
+      end
+
+      def static_models_sparse(table)
+        table.each do |row|
+          expected = row.size == 2 ? [Fixnum, Symbol] : [Fixnum, Symbol, Hash]
+
+          if row.collect(&:class) != expected
+            raise ValueError.new("Invalid row #{row}, expected #{expected}")
+          end
+        end
+
+        columns = table.select{|r| r.size == 3}
+          .collect{|r| r.last.keys }.flatten(1).uniq
+
+        hashes = table.collect{ |r| (r[2] || {}).merge(id: r[0], code: r[1]) }
+        static_models_hashes ([:id, :code] + columns), hashes
+      end
+
+      def static_models_hashes(columns, hashes)
+        unless columns.all?{|c| c.is_a?(Symbol)}
+          raise ValueError.new("Table column names must all be Symbols")
+        end
+
+        unless hashes.all?{|h| h[:id].is_a?(Fixnum)}
+          raise ValueError.new("Ids must be integers")
+        end
+
+        unless hashes.all?{|h| h[:code].is_a?(Symbol)}
+          raise ValueError.new("Codes must be Symbols")
+        end
+
+        attr_accessor *columns
+        self.id_column = columns[0]
+        self.code_column = columns[1]
 
         self.values = {}
-        new_values.each do |k,v|
-          unless k.is_a?(Integer)
-            raise TypeError.new("Expected Integer for keys, found #{k.class}")
-          end
-
-          if v.is_a?(Array)
-            unless v.size == 2 && v.first.is_a?(Symbol) && v.last.is_a?(Hash)
-              raise TypeError.new("Expected [Symbol, Hash] found #{v.class}") 
-            end
-            attr_accessor *v.last.keys
-          else
-            unless v.is_a?(Symbol)
-              raise TypeError.new("Expected Symbol, found #{v.class}")
-            end
-          end
-          item = new(k, *v)
-          values[k] = item
-
-          raise DuplicateCodes.new if singleton_methods.include?(item.code)
+        hashes.each do |hash|
+          item = new(hash)
+          values[item.id] = item
+          raise ValueError.new if singleton_methods.include?(item.code)
           define_singleton_method(item.code){ item }
         end
       end
@@ -89,7 +109,7 @@ module StaticModels
 
         define_method("#{association}=") do |value|
           if expected_class && !value.nil? && value.class != expected_class
-            raise TypeError.new("Expected #{expected_class} got #{value.class}")
+            raise ValueError.new("Expected #{expected_class} got #{value.class}")
           end
 
           if value.nil? || value.class.include?(Model)
@@ -110,6 +130,5 @@ module StaticModels
     end
   end
 
-  class TypeError < StandardError; end
-  class DuplicateCodes < StandardError; end
+  class ValueError < StandardError; end
 end
