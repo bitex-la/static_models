@@ -278,5 +278,31 @@ describe StaticModels::BelongsTo do
       dog.another_dog.should be_nil
       dog.anydog.should be_nil
     end
+
+    it 'handles basic validations gracefully' do
+      class ValidDog < ActiveRecord::Base
+        include StaticModels::BelongsTo
+        belongs_to :breed
+        belongs_to :anything, polymorphic: true
+        validates :breed, :anything, presence: true
+        validates :breed, uniqueness: true
+        validates_associated :breed
+      end
+
+      run_migration do
+        create_table(:valid_dogs, force: true) do |t|
+          t.integer :breed_id
+          t.integer :anything_id
+          t.string :anything_type
+        end
+      end
+
+      dog = ValidDog.new
+      dog.should_not be_valid
+      dog.update(breed: Breed.corgi, anything: Breed.doberman)
+      dog.should be_valid
+      dog.update(anything: dog)
+      dog.should be_valid
+    end
   end
 end

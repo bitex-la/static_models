@@ -7,15 +7,22 @@ module StaticModels
     extend ActiveSupport::Concern
 
     included do |i|
-      cattr_accessor :values, :id_column, :code_column
+      cattr_accessor :values, :primary_key, :code_column
+      attr_accessor :attributes
 
       def initialize(attributes)
+        self.attributes = attributes
         attributes.each{|name,value| send("#{name}=", value) }
       end
 
       def name; send(self.class.code_column); end
       def to_s; name.to_s; end
-      def to_i; send(self.class.id_column); end
+      def to_i; send(self.class.primary_key); end
+
+      # Ugly hack to make this compatible with AR validatinos.
+      # It's safe to assume a StaticModel is always valid and never destroyed.
+      def marked_for_destruction?; false; end
+      def valid?; true; end
     end
 
     class_methods do
@@ -58,7 +65,7 @@ module StaticModels
         end
 
         attr_accessor *columns
-        self.id_column = columns[0]
+        self.primary_key = columns[0]
         self.code_column = columns[1]
 
         self.values = {}
