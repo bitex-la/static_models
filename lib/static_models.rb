@@ -97,7 +97,7 @@ module StaticModels
         super(association, opts) if defined?(super)
 
         expected_class = unless opts[:polymorphic]
-          module_name = self.class.to_s.split("::")[0..-2].join("::")
+          module_name = self.to_s.split("::")[0..-2].join("::")
           [ opts[:class_name],
             "#{module_name}::#{association.to_s.camelize}",
             association.to_s.camelize,
