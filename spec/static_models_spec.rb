@@ -50,6 +50,10 @@ describe StaticModels::Model do
     }
   end
 
+  it "has an AR like 'where', but dummy" do
+    Breed.where.should == Breed.all
+  end
+
   it "#to_s" do
     Breed.collie.to_s.should == 'collie'
   end

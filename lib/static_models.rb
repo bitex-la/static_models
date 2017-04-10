@@ -15,14 +15,33 @@ module StaticModels
         attributes.each{|name,value| send("#{name}=", value) }
       end
 
-      def name; send(self.class.code_column); end
-      def to_s; name.to_s; end
-      def to_i; send(self.class.primary_key); end
+      def name
+        send(self.class.code_column)
+      end
+
+      def to_s
+        name.to_s
+      end
+
+      def to_i
+        send(self.class.primary_key)
+      end
 
       # Ugly hack to make this compatible with AR validatinos.
       # It's safe to assume a StaticModel is always valid and never destroyed.
-      def marked_for_destruction?; false; end
-      def valid?; true; end
+      def marked_for_destruction?
+        false
+      end
+
+      def valid?
+        true
+      end
+      
+      # For compatibility with AR relations in ActiveAdmin and others.
+      # Feel free to override this.
+      def self.where(*args)
+        all
+      end
     end
 
     class_methods do
