@@ -179,6 +179,8 @@ describe StaticModels::BelongsTo do
       LocalDoggie.new.tap do |d|
         d.breed = Breed.collie
         d.local_breed = LocalBreed.local_collie
+        d.breed.should == Breed.collie
+        d.local_breed.should == LocalBreed.local_collie
       end
     end
   end
