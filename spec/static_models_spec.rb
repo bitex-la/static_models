@@ -50,6 +50,10 @@ describe StaticModels::Model do
     }
   end
 
+  it "has a model name" do
+    Breed.model_name.plural.should == "breeds"
+  end
+
   it "has an AR like 'where', but dummy" do
     Breed.where.should == Breed.all
   end

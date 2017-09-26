@@ -103,6 +103,10 @@ module StaticModels
       def all
         values.values
       end
+
+      def model_name
+        ActiveModel::Name.new(self)
+      end
     end
   end
 
