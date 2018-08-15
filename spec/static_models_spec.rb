@@ -157,8 +157,27 @@ describe StaticModels::BelongsTo do
       WeirdDoggie.new.tap do |d|
         d.dog_kind = Breed.corgi
         d.dog_kind_id = 6
-      end
+        d.dog_kind_code = 'corgi'
+      end      
     end
+  end
+
+  it "can receive code representation for association" do
+    class AnotherWeirdDoggie
+      attr_accessor :dog_kind_id
+
+      include StaticModels::BelongsTo
+      belongs_to :dog_kind, class_name: 'Breed'
+    end
+
+    a = AnotherWeirdDoggie.new.tap do |d|
+      d.dog_kind_code = 'corgi'
+    end
+
+    a.dog_kind.should == Breed.corgi
+    a.dog_kind_code.should == :corgi
+    Breed.find_by_code('corgi').should == Breed.corgi 
+    Breed.find_by_code(:corgi).should == Breed.corgi 
   end
 
   it "finds local and global models when guessing association class" do
