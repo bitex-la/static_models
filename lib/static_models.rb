@@ -56,7 +56,11 @@ module StaticModels
 
       def static_models_sparse(table)
         table.each do |row|
-          expected = row.size == 2 ? [Fixnum, Symbol] : [Fixnum, Symbol, Hash]
+          expected = if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.4.0')
+            row.size == 2 ? [Integer, Symbol] : [Integer, Symbol, Hash]
+          else  
+            row.size == 2 ? [Fixnum, Symbol] : [Fixnum, Symbol, Hash]
+          end
 
           if row.collect(&:class) != expected
             raise ValueError.new("Invalid row #{row}, expected #{expected}")
@@ -98,6 +102,10 @@ module StaticModels
 
       def find(id)
         values[id.to_i]
+      end
+
+      def find_by_code(code)
+        all.select{|x| x.code == code.to_sym}.first 
       end
 
       def all
@@ -155,6 +163,15 @@ module StaticModels
           else
             super(value)
           end
+        end
+
+        #Adding accesor for code_representation
+        define_method("#{association}_code=") do |value|
+          send("#{association}=", expected_class.find_by_code(value))
+        end 
+
+        define_method("#{association}_code") do
+          send(association).try(:code)
         end
       end
     end
