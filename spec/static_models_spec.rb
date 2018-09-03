@@ -58,6 +58,13 @@ describe StaticModels::Model do
     Breed.where.should == Breed.all
   end
 
+  it "has a find_by_code method" do
+    Breed.find_by_code('corgi').should == Breed.corgi 
+    Breed.find_by_code(:corgi).should == Breed.corgi 
+    Breed.find_by_code(nil).should == nil
+    Breed.find_by_code([]).should == nil
+  end
+
   it "#to_s" do
     Breed.collie.to_s.should == 'collie'
   end
@@ -147,14 +154,14 @@ describe StaticModels::BelongsTo do
     end
   end
 
-  it "can receive a specific class for association" do
+  it "can receive a specific class name for association" do
     class WeirdDoggie
       attr_accessor :dog_kind_id
 
       include StaticModels::BelongsTo
       belongs_to :dog_kind, class_name: 'Breed'
 
-      WeirdDoggie.new.tap do |d|
+      a = WeirdDoggie.new.tap do |d|
         d.dog_kind = Breed.corgi
         d.dog_kind_id = 6
         d.dog_kind_code = 'corgi'
@@ -176,8 +183,16 @@ describe StaticModels::BelongsTo do
 
     a.dog_kind.should == Breed.corgi
     a.dog_kind_code.should == :corgi
-    Breed.find_by_code('corgi').should == Breed.corgi 
-    Breed.find_by_code(:corgi).should == Breed.corgi 
+  end
+
+  it "does not fail if using bogus values for association code" do
+    expect do 
+      d = Dog.new
+      d.breed_code = 3333
+      d.breed.should be_nil
+      d.breed_code = "nothing"
+      d.breed.should be_nil
+    end.not_to raise_exception
   end
 
   it "finds local and global models when guessing association class" do
