@@ -45,6 +45,12 @@ module StaticModels
     end
 
     class_methods do
+      NumberType = if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.4.0')
+        Integer
+      else  
+        Fixnum
+      end
+
       def static_models_dense(table)
         columns = table.first
         hashes = table[1..-1].collect do |row|
@@ -56,11 +62,7 @@ module StaticModels
 
       def static_models_sparse(table)
         table.each do |row|
-          expected = if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.4.0')
-            row.size == 2 ? [Integer, Symbol] : [Integer, Symbol, Hash]
-          else  
-            row.size == 2 ? [Fixnum, Symbol] : [Fixnum, Symbol, Hash]
-          end
+          expected = row.size == 2 ? [NumberType, Symbol] : [NumberType, Symbol, Hash]
 
           if row.collect(&:class) != expected
             raise ValueError.new("Invalid row #{row}, expected #{expected}")
@@ -79,7 +81,7 @@ module StaticModels
           raise ValueError.new("Table column names must all be Symbols")
         end
 
-        unless hashes.all?{|h| h[:id].is_a?(Fixnum)}
+        unless hashes.all?{|h| h[:id].is_a?(NumberType)}
           raise ValueError.new("Ids must be integers")
         end
 
