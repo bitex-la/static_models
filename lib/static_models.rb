@@ -114,6 +114,10 @@ module StaticModels
         values.values
       end
 
+      def codes
+        values.values.map(&:code)
+      end
+
       def model_name
         ActiveModel::Name.new(self)
       end
@@ -169,11 +173,18 @@ module StaticModels
 
         #Adding accesor for code_representation
         define_method("#{association}_code=") do |value|
-          send("#{association}=", expected_class.find_by_code(value))
+          if thing = expected_class.find_by_code(value)
+            instance_variable_set("@invalid_#{association}_code", nil)
+            send("#{association}=", thing)
+          else
+            instance_variable_set("@invalid_#{association}_code",
+              value.try(:to_sym))
+          end
         end 
 
         define_method("#{association}_code") do
-          send(association).try(:code)
+          send(association).try(:code) ||
+            instance_variable_get("@invalid_#{association}_code")
         end
       end
     end

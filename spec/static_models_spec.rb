@@ -192,6 +192,10 @@ describe StaticModels::BelongsTo do
       d.breed.should be_nil
       d.breed_code = "nothing"
       d.breed.should be_nil
+      d.breed_code.should == :nothing
+      d.breed_code = :corgi
+      d.breed_code.should == :corgi
+      d.breed.should == Breed.corgi
     end.not_to raise_exception
   end
 
@@ -348,5 +352,9 @@ describe StaticModels::BelongsTo do
       dog.update(anything: dog)
       dog.should be_valid
     end
+  end
+
+  it "has a code accessor useful for validations" do
+    Breed.codes.should == [:collie, :foxhound, :corgi, :doberman]
   end
 end
