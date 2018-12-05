@@ -100,6 +100,10 @@ module StaticModels
         values[id.to_i]
       end
 
+      def find_by_code(code)
+        all.select{|x| x.code == code.try(:to_sym)}.first 
+      end
+
       def all
         values.values
       end
