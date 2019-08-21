@@ -97,11 +97,11 @@ module StaticModels
       end
 
       def find(id)
-        values[id.to_i]
+        values[id.to_i] || (raise NotFoundError.new("id #{id} not found"))
       end
 
       def find_by_code(code)
-        all.select{|x| x.code == code.try(:to_sym)}.first 
+        all.select{|x| x.code == code.try(:to_sym)}.first
       end
 
       def all
@@ -181,4 +181,5 @@ module StaticModels
   end
 
   class ValueError < StandardError; end
+  class NotFoundError < StandardError; end
 end

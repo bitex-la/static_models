@@ -200,7 +200,7 @@ describe StaticModels::BelongsTo do
     dog.breed = Breed.corgi
     dog.breed = nil
     dog.breed_id.should be_nil
-    dog.breed.should be_nil
+    expect { dog.breed }.to raise_error(StaticModels::NotFoundError)
     dog.anything = Breed.doberman
     dog.anything = nil
     dog.anything_id.should be_nil
