@@ -134,7 +134,7 @@ module StaticModels
         define_method("#{association}") do
           klass = expected_class || send("#{association}_type").to_s.safe_constantize
 
-          if klass && klass.include?(Model)
+          if klass && klass.include?(Model) && send("#{association}_id").present?
             klass.find(send("#{association}_id"))
           elsif defined?(super)
             super()

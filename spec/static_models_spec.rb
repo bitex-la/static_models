@@ -50,6 +50,10 @@ describe StaticModels::Model do
     }
   end
 
+  it "throws an error when model not found" do
+    expect { Breed.find(56) }.to raise_error(StaticModels::NotFoundError)
+  end
+
   it "has a model name" do
     Breed.model_name.plural.should == "breeds"
   end
@@ -200,7 +204,7 @@ describe StaticModels::BelongsTo do
     dog.breed = Breed.corgi
     dog.breed = nil
     dog.breed_id.should be_nil
-    expect { dog.breed }.to raise_error(StaticModels::NotFoundError)
+    expect(dog.breed).to be_nil
     dog.anything = Breed.doberman
     dog.anything = nil
     dog.anything_id.should be_nil
