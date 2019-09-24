@@ -46,6 +46,10 @@ module StaticModels
       def ==(other)
         other.id == id
       end
+
+      def eql?(other)
+        other == self
+      end
     end
 
     class_methods do
