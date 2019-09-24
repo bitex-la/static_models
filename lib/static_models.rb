@@ -42,6 +42,10 @@ module StaticModels
       def self.where(*args)
         all
       end
+
+      def ==(other)
+        other.id == id
+      end
     end
 
     class_methods do
