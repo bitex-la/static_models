@@ -47,6 +47,10 @@ module StaticModels
         other.id == id
       end
 
+      def hash
+        "static_model_#{self.class.object_id}_#{id}".freeze.hash
+      end
+
       def eql?(other)
         other == self
       end
