@@ -20,7 +20,6 @@ class Dog
 end
 
 describe StaticModels::Model do
-
   it "defines and uses a static model" do
     Breed.corgi.tap do |b|
       b.should == Breed.find(6)
@@ -48,6 +47,20 @@ describe StaticModels::Model do
       6 => Breed.corgi,
       7 => Breed.doberman
     }
+  end
+
+  describe "when comparing equality" do
+    it "is equal when same code is used" do
+      expect(Breed.collie).to eq Breed.new(id: 1, code: :collie, height: nil)
+    end
+    it "can compare inside sets" do
+      expect( Set.new([Breed.collie]))
+        .to eq Set.new([Breed.new(id: 1, code: :collie, height: nil)])
+    end
+  end
+
+  it "throws an error when model not found" do
+    expect { Breed.find(56) }.to raise_error(StaticModels::NotFoundError)
   end
 
   it "has a model name" do
@@ -238,7 +251,7 @@ describe StaticModels::BelongsTo do
     dog.breed = Breed.corgi
     dog.breed = nil
     dog.breed_id.should be_nil
-    dog.breed.should be_nil
+    expect(dog.breed).to be_nil
     dog.anything = Breed.doberman
     dog.anything = nil
     dog.anything_id.should be_nil

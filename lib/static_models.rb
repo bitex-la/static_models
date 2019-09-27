@@ -42,6 +42,18 @@ module StaticModels
       def self.where(*args)
         all
       end
+
+      def ==(other)
+        other.id == id
+      end
+
+      def hash
+        "static_model_#{self.class.object_id}_#{id}".freeze.hash
+      end
+
+      def eql?(other)
+        other == self
+      end
     end
 
     class_methods do
@@ -103,7 +115,11 @@ module StaticModels
       end
 
       def find(id)
-        values[id.to_i]
+        values[id.to_i] || (raise NotFoundError.new("id #{id} not found"))
+      end
+
+      def find_by_code(code)
+        all.select{|x| x.code == code.try(:to_sym)}.first
       end
 
       def find_by_code(code)
@@ -144,7 +160,7 @@ module StaticModels
         define_method("#{association}") do
           klass = expected_class || send("#{association}_type").to_s.safe_constantize
 
-          if klass && klass.include?(Model)
+          if klass && klass.include?(Model) && send("#{association}_id").present?
             klass.find(send("#{association}_id"))
           elsif defined?(super)
             super()
@@ -191,4 +207,5 @@ module StaticModels
   end
 
   class ValueError < StandardError; end
+  class NotFoundError < StandardError; end
 end
