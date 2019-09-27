@@ -54,6 +54,10 @@ module StaticModels
       def eql?(other)
         other == self
       end
+
+      def read_attribute(attribute)
+        self.send(attribute)
+      end
     end
 
     class_methods do
