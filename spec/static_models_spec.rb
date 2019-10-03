@@ -57,6 +57,9 @@ describe StaticModels::Model do
       expect( Set.new([Breed.collie]))
         .to eq Set.new([Breed.new(id: 1, code: :collie, height: nil)])
     end
+    it 'does not fail when compare with anything not a static model' do
+      expect(Breed.collie).not_to eq(true)
+    end
   end
 
   it "throws an error when model not found" do
