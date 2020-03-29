@@ -124,13 +124,13 @@ describe StaticModels::Model do
       check_def("checks sparse "+ title) do static_models_sparse(table) end
     end
 
-    checks_sparse "id is Fixnum", ["hello", :foo]
+    checks_sparse "id is Integer", ["hello", :foo]
     checks_sparse "code is Symbol", [1, 2323]
     checks_sparse "has only id, code, and Hash", [1, :bar, :ble, foo: :bar]
     checks_sparse "codes are unique", [1, :foo], [2, :foo]
     checks_sparse "columns are symbols", [1, :foo, [] => :baz]
 
-    checks_dense "id is Fixnum", [:id, :code], ["hello", :foo]
+    checks_dense "id is Integer", [:id, :code], ["hello", :foo]
     checks_dense "invalid code type", [:id, :code], [1, 2323]
     checks_dense "has id and code", [:id, :code, :other], [1,]
     checks_dense "codes are unique", [:id, :code], [1, :foo], [2, :foo]

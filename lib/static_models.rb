@@ -68,7 +68,7 @@ module StaticModels
 
       def static_models_sparse(table)
         table.each do |row|
-          expected = row.size == 2 ? [Fixnum, Symbol] : [Fixnum, Symbol, Hash]
+          expected = row.size == 2 ? [Integer, Symbol] : [Integer, Symbol, Hash]
 
           if row.collect(&:class) != expected
             raise ValueError.new("Invalid row #{row}, expected #{expected}")
@@ -87,7 +87,7 @@ module StaticModels
           raise ValueError.new("Table column names must all be Symbols")
         end
 
-        unless hashes.all?{|h| h[:id].is_a?(Fixnum)}
+        unless hashes.all?{|h| h[:id].is_a?(Integer)}
           raise ValueError.new("Ids must be integers")
         end
 
