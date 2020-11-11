@@ -18,6 +18,7 @@ jobs:
     steps:
       - checkout
       - ruby/install-deps:
+          bundler-version: 1.17.3
           with-cache: false
       - ruby/rspec-test
       - store_artifacts:
