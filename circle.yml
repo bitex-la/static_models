@@ -21,8 +21,6 @@ jobs:
           bundler-version: 1.17.3
           with-cache: false
       - ruby/rspec-test
-      - store_artifacts:
-          path: /tmp/artifacts
       - slack/status:
           channel: devs-alerts
           fail_only: true
