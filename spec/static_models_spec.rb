@@ -20,7 +20,6 @@ class Dog
 end
 
 describe StaticModels::Model do
-
   it "defines and uses a static model" do
     Breed.corgi.tap do |b|
       b.should == Breed.find(6)
@@ -48,6 +47,23 @@ describe StaticModels::Model do
       6 => Breed.corgi,
       7 => Breed.doberman
     }
+  end
+
+  describe "when comparing equality" do
+    it "is equal when same code is used" do
+      expect(Breed.collie).to eq Breed.new(id: 1, code: :collie, height: nil)
+    end
+    it "can compare inside sets" do
+      expect( Set.new([Breed.collie]))
+        .to eq Set.new([Breed.new(id: 1, code: :collie, height: nil)])
+    end
+    it 'does not fail when compare with anything not a static model' do
+      expect(Breed.collie).not_to eq(true)
+    end
+  end
+
+  it "throws an error when model not found" do
+    expect { Breed.find(56) }.to raise_error(StaticModels::NotFoundError)
   end
 
   it "has a model name" do
@@ -115,13 +131,13 @@ describe StaticModels::Model do
       check_def("checks sparse "+ title) do static_models_sparse(table) end
     end
 
-    checks_sparse "id is Fixnum", ["hello", :foo]
+    checks_sparse "id is Integer", ["hello", :foo]
     checks_sparse "code is Symbol", [1, 2323]
     checks_sparse "has only id, code, and Hash", [1, :bar, :ble, foo: :bar]
     checks_sparse "codes are unique", [1, :foo], [2, :foo]
     checks_sparse "columns are symbols", [1, :foo, [] => :baz]
 
-    checks_dense "id is Fixnum", [:id, :code], ["hello", :foo]
+    checks_dense "id is Integer", [:id, :code], ["hello", :foo]
     checks_dense "invalid code type", [:id, :code], [1, 2323]
     checks_dense "has id and code", [:id, :code, :other], [1,]
     checks_dense "codes are unique", [:id, :code], [1, :foo], [2, :foo]
@@ -238,7 +254,7 @@ describe StaticModels::BelongsTo do
     dog.breed = Breed.corgi
     dog.breed = nil
     dog.breed_id.should be_nil
-    dog.breed.should be_nil
+    expect(dog.breed).to be_nil
     dog.anything = Breed.doberman
     dog.anything = nil
     dog.anything_id.should be_nil
