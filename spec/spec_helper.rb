@@ -5,7 +5,6 @@ require 'sqlite3'
 require 'byebug'
 require "static_models"
 
-
 # Require our macros and extensions
 Dir[File.expand_path('../../spec/support/macros/**/*.rb', __FILE__)].map(&method(:require))
 
