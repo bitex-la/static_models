@@ -36,7 +36,7 @@ module StaticModels
       def valid?
         true
       end
-      
+
       # For compatibility with AR relations in ActiveAdmin and others.
       # Feel free to override this.
       def self.where(*args)
@@ -111,6 +111,13 @@ module StaticModels
           values[item.id] = item
           raise ValueError.new if singleton_methods.include?(item.code)
           define_singleton_method(item.code){ item }
+        end
+
+        def arel_table
+          @arel_table ||= begin
+                            table_name = self.to_s.split('::').map(&:underscore).map(&:pluralize).join('_')
+                            Arel::Table.new(table_name, type_caster: ::StaticModels::FakeTypeCaster.new)
+                          end
         end
       end
 
@@ -199,6 +206,12 @@ module StaticModels
             instance_variable_get("@invalid_#{association}_code")
         end
       end
+    end
+  end
+
+  class FakeTypeCaster
+    def type_cast_for_database(_attr_name, value)
+      value
     end
   end
 

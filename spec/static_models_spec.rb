@@ -368,6 +368,10 @@ describe StaticModels::BelongsTo do
       dog.update(anything: dog)
       dog.should be_valid
     end
+
+    it 'can be used in queries' do
+      expect(StoreDog.where(breed: Breed.collie).count).to be_zero
+    end
   end
 
   it "has a code accessor useful for validations" do
