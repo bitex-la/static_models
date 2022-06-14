@@ -132,8 +132,8 @@ module StaticModels
     extend ActiveSupport::Concern
 
     class_methods do
-      def belongs_to(association, opts = {})
-        super(association, opts) if defined?(super)
+      def belongs_to(association, scope = nil, opts = {})
+        super(association, scope, opts) if defined?(super)
 
         expected_class = unless opts[:polymorphic]
           module_name = self.to_s.split("::")[0..-2].join("::")
